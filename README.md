@@ -57,3 +57,7 @@ Researchers studying the effects of climate on agriculture can bypass complex AP
 ### 3. Soil and Geospatial Studies
 Students in agronomy can explore the "Weathering Proxy Model" logic used in the geochemical pipeline[cite: 1].
 *   **How to use:** By analyzing how the dashboard dynamically alters assumed soil pH and NPK capacity based on historical rainfall (e.g., >1500mm indicating highly leached acidic soil vs. <500mm indicating arid alkaline soil), students can test their geospatial understanding of how long-term weather shapes soil typologies[cite: 1].
+
+
+---
+Made with 💖 By Vaibhav Pandey
