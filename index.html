@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AgriWater AI - Comprehensive Farm Planning Dashboard">
+    <title>AgriWater AI - Farm OS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header class="glass-panel">
+        <div class="header-content">
+            <div>
+                <h1>AgriWater<span class="highlight"> OS</span></h1>
+                <p>AI Crop Matching, Soil Geochemistry & Climate Intelligence</p>
+            </div>
+            <div class="search-container">
+                <input type="text" id="locationSearch" placeholder="Search location (e.g. Pusa, Bihar)"
+                    onkeydown="if(event.key === 'Enter') searchLocation()">
+                <button class="btn-search" onclick="searchLocation()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="header-actions">
+                <button class="btn-guide" onclick="toggleModal('guideModal')">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                    Guide Book
+                </button>
+                <div class="location-display">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)"
+                        stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <div id="coordsDisplay">Loading location...</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        <!-- COL 1 -->
+        <div class="panel glass-panel map-panel">
+            <div class="panel-header">
+                <h3 class="panel-title">1. GIS Topography Map</h3>
+                <span class="badge" id="elevationDisplay">Elev: -- m</span>
+            </div>
+            <div id="map"></div>
+        </div>
+
+        <div class="panel glass-panel">
+            <h3 class="panel-title">3. Daily Irrigation Planner</h3>
+            <div class="input-group">
+                <label>Crop Root Depth:</label>
+                <select id="cropType" class="glass-select" onchange="runAnalysis()">
+                    <option value="shallow">Shallow (0-7cm) - Vegetables</option>
+                    <option value="medium" selected>Medium (7-28cm) - Cereals</option>
+                    <option value="deep">Deep (28-100cm) - Trees/Orchards</option>
+                </select>
+            </div>
+            <div class="metrics-grid mt-1">
+                <div class="metric-card">
+                    <span class="label">24h Rain Expected</span>
+                    <span class="value text-blue" id="rainVal">--<small>mm</small></span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">24h Water Loss (ET₀)</span>
+                    <span class="value text-red" id="etVal">--<small>mm</small></span>
+                </div>
+                <div class="metric-card full-width">
+                    <span class="label">Avg Soil Moisture (Volumetric)</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="moistureBar" style="width: 0%"></div>
+                    </div>
+                    <div class="flex-between">
+                        <small>Dry</small>
+                        <span id="moistureVal">-- m³/m³</span>
+                        <small>Saturated</small>
+                    </div>
+                </div>
+            </div>
+            <div class="recommendation-box" id="irrigationRec">
+                <strong id="irrigTitle">Analyzing...</strong>
+                <p id="irrigText">Awaiting farm selection.</p>
+            </div>
+        </div>
+
+        <div class="panel glass-panel">
+            <div class="panel-header">
+                <h3 class="panel-title">5. Pollination & Spraying AI</h3>
+                <span class="badge bg-green">Live Engine</span>
+            </div>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="label">Spraying Condition</span>
+                    <span class="value badge" id="sprayVal">--</span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Pollinator Activity</span>
+                    <span class="value badge" id="pollinatorVal">--</span>
+                </div>
+            </div>
+            <div class="recommendation-box feature-box mt-1">
+                <strong id="pollinatorTitle">AI Overview</strong>
+                <p id="pollinatorText" class="text-muted">Loading pollinator data based on wind and temp...</p>
+            </div>
+        </div>
+
+        <div class="panel glass-panel">
+            <h3 class="panel-title">7. Soil Conservation & Topography</h3>
+            <div class="metrics-list">
+                <div class="list-item">
+                    <span class="label">Estimated Slope Proxy</span>
+                    <span class="value" id="slopeVal">--</span>
+                </div>
+                <div class="list-item">
+                    <span class="label">Erosion Risk Index</span>
+                    <span class="value badge" id="erosionRiskVal">--</span>
+                </div>
+            </div>
+            <div class="recommendation-box feature-box mt-1">
+                <strong>Agronomy Recommendations</strong>
+                <ul id="agronomyList">
+                    <li>Loading conservation practices...</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="panel glass-panel ml-panel">
+            <div class="panel-header">
+                <h3 class="panel-title">9. KNN Machine Learning Crop Matcher</h3>
+                <span class="badge bg-green">AI Active</span>
+            </div>
+            <p class="text-sm text-muted mb-1">Our ML algorithm matches your farm's climate and geochemistry against a
+                robust crop dataset.</p>
+            <div id="mlResults" class="ml-results-container">
+                <div class="text-center text-muted">Loading Kaggle Dataset...</div>
+            </div>
+            <div class="mt-1 text-center" id="googleSearchBox">
+                <!-- Dynamically filled -->
+            </div>
+        </div>
+
+        <!-- COL 2 -->
+        <div class="panel glass-panel">
+            <h3 class="panel-title">2. Live Atmospheric Conditions</h3>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="label">Air Temperature</span>
+                    <span class="value" id="tempVal">--<small>°C</small></span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Solar Radiation</span>
+                    <span class="value" id="solarVal">--<small>W/m²</small></span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Wind Speed</span>
+                    <span class="value" id="windVal">--<small>km/h</small></span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Humidity</span>
+                    <span class="value" id="humidityVal">--<small>%</small></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel glass-panel highlight-panel">
+            <h3 class="panel-title">4. Soil Geochemistry & LST</h3>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="label">Land Surface Temp (LST)</span>
+                    <span class="value text-yellow" id="lstVal">--<small>°C</small></span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Specific Soil Name</span>
+                    <span class="value" id="soilTypeVal" style="font-size: 1.1rem">--</span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Soil pH Class</span>
+                    <span class="value badge" id="phVal">--</span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">NPK Capacity</span>
+                    <span class="value badge" id="npkVal">--</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel glass-panel">
+            <h3 class="panel-title">6. Farm Intelligence (Filtered Time Range)</h3>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="label">Total Rainfall</span>
+                    <span class="value text-blue" id="yearlyRain">--<small>mm</small></span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Avg Temp</span>
+                    <span class="value" id="yearlyTemp">--<small>°C</small></span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Frost Risk Days</span>
+                    <span class="value text-blue" id="frostDays">--</span>
+                </div>
+                <div class="metric-card">
+                    <span class="label">Extreme Heat Days</span>
+                    <span class="value text-red" id="heatDays">--</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel glass-panel dev-panel">
+            <h3 class="panel-title">8. Developer & Export Hub</h3>
+            <p class="text-sm text-muted mb-1">Export the raw data arrays for ingestion into other data pipelines or
+                farm management software.</p>
+            <div class="dev-actions mt-1">
+                <button class="btn-export" onclick="exportData('csv')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download CSV
+                </button>
+                <button class="btn-export" onclick="exportData('json')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download JSON
+                </button>
+                <button class="btn-export btn-print" onclick="window.print()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Print Report
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- HISTORICAL CHARTS SECTION -->
+    <div class="panel glass-panel" style="max-width: 1600px; margin: 1.5rem auto;">
+        <div class="panel-header">
+            <h3 class="panel-title">Historical Analytics Hub</h3>
+            <div class="input-group" style="margin:0; min-width: 200px;">
+                <label>Time Range Filter:</label>
+                <select id="timeRange" class="glass-select" onchange="runAnalysis()">
+                    <option value="30">Past 30 Days</option>
+                    <option value="180">Past 6 Months</option>
+                    <option value="365" selected>Past 1 Year</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="chart-panel feature-box" style="padding: 1rem; border-radius: 8px;">
+                <h4 style="margin-top:0; color:var(--text-main);">Hydrograph (Rainfall vs Evapotranspiration)</h4>
+                <div class="canvas-wrapper"><canvas id="hydroChart"></canvas></div>
+            </div>
+
+            <div class="chart-panel feature-box" style="padding: 1rem; border-radius: 8px;">
+                <h4 style="margin-top:0; color:var(--text-main);">Past Soil Erosion Risk Index</h4>
+                <div class="canvas-wrapper"><canvas id="erosionChart"></canvas></div>
+            </div>
+
+            <div class="chart-panel feature-box" style="padding: 1rem; border-radius: 8px;">
+                <h4 style="margin-top:0; color:var(--text-main);">Historical Climate Trends</h4>
+                <div class="canvas-wrapper"><canvas id="climateChart"></canvas></div>
+            </div>
+
+            <div class="chart-panel feature-box" style="padding: 1rem; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h4 style="margin:0; color:var(--text-main);">Local Market Demand</h4>
+                    <span class="badge bg-blue" id="marketCropLabel">Crop: --</span>
+                </div>
+                <div class="canvas-wrapper"><canvas id="marketChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GUIDE BOOK MODAL -->
+    <div class="modal-overlay" id="guideModal" onclick="closeModal(event)">
+        <div class="modal-content glass-panel" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>Farmer's Guide Book</h2>
+                <button class="close-btn" onclick="toggleModal('guideModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="guide-section">
+                    <h3>How this Dashboard Helps You</h3>
+                    <p>Welcome to AgriWater OS. This tool acts as a "Digital Twin" of your farm, enabling precision
+                        agriculture without expensive hardware.</p>
+                    <ul>
+                        <li><b>Precision Irrigation:</b> Avoid overwatering or crop stress by tracking exact water
+                            deficit (ET₀ - P).</li>
+                        <li><b>Pollination Tracking:</b> Monitor exact atmospheric conditions to optimize periods where
+                            bees and butterflies will naturally pollinate your crops.</li>
+                        <li><b>Future-Proofing:</b> Discover which cash crops will thrive on your land using historical
+                            data, rather than guessing.</li>
+                    </ul>
+                </div>
+                <div class="guide-section">
+                    <h3>The Kaggle KNN ML Engine</h3>
+                    <p>Instead of simple rules, our dashboard uses a production-ready Machine Learning algorithm called
+                        KNN, trained dynamically on the 2,200 row Kaggle Crop Recommendation dataset. It plots your
+                        farm's data across 7 dimensions (N,P,K,Temp,Humidity,pH,Rainfall) to calculate statistical
+                        matches.</p>
+                </div>
+                <div class="guide-section">
+                    <h3>Irrigation Insights</h3>
+                    <div class="api-card">
+                        <strong id="irrigTitle">Awaiting Analysis</strong>
+                        <p id="irrigText">Run the analysis to see the water balance and soil moisture data.</p>
+                    </div>
+                </div>
+                <div class="guide-section">
+                    <h3>Data Sources & APIs (Production Ready)</h3>
+                    <div class="api-card">
+                        <strong>Open-Meteo API</strong>
+                        <p>We rely on Open-Meteo for real-time forecasting and historical archive data. It aggregates
+                            models from national weather services like NOAA (USA) and DWD (Germany). It is highly
+                            reliable, updates hourly, and provides the critical Evapotranspiration (ET₀) and Soil
+                            Moisture metrics used in our irrigation planner.</p>
+                    </div>
+                    <div class="api-card">
+                        <strong>Geochemical Modeling (LST & NPK)</strong>
+                        <p>Because live NPK (Nitrogen, Phosphorus, Potassium) APIs are extremely slow, our engine uses a
+                            <i>Weathering Proxy Model</i>. It estimates soil texture and nutrient retention capacity
+                            based on historical leaching and thermal breakdown.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="app.js?v=2"></script>
+</body>
+
+</html>
